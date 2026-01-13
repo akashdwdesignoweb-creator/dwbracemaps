@@ -53,7 +53,7 @@
 /* Reset & Base */
 * {
   box-sizing: border-box;
-  padding: 0;
+  padding: 2;
   margin: 0;
 }
 

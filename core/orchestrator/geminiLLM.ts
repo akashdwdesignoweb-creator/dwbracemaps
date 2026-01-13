@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 export class GeminiLLM {
   private ai: GoogleGenAI;
-  private model = "gemini-3-flash-preview";
+  private model = "gemini-flash-latest";
 
   constructor() {
     if (!process.env.GEMINI_API_KEY) {
@@ -17,11 +17,11 @@ export class GeminiLLM {
   async complete(prompt: string): Promise<string> {
     const response = await this.ai.models.generateContentStream({
       model: this.model,
-      config: {
-        thinkingConfig: {
-          thinkingLevel: "HIGH",
-        },
-      },
+      // config: {
+      //   thinkingConfig: {
+      //     thinkingLevel: 'HIGH',
+      //   },
+      // },
       contents: [
         {
           role: "user",

@@ -27,31 +27,26 @@ SCREEN SEPARATION RULES (VERY IMPORTANT):
 - Navigation between screens should be described inside
   button or action nodes, not by nesting screens.
 - Treat each user-visible page or step as a separate Screen.
-- Login, Sign Up, Forgot Password, OTP Verification, and Reset Password
-  MUST be created as separate Screens, even if they belong to Authentication.
 - Do NOT merge multiple screens into one.
 - If the user navigates forward or backward, it is a new Screen.
 
-RULES:
-- A Screen = an app page
-- An Interaction = a real button, link, or menu action
-- Spec must describe exactly what happens on click
-- Write in implementation-ready detail
-- No abstract terms
+GRANULARITY LEVEL: EXTREME (CRITICAL)
+Your goal is to provide a COMPLETE BLUEPRINT for the developer.
+- DO NOT summarize. DO NOT be brief.
+- List EVERY single UI element (Buttons, Input Fields, Dropdowns, Toggles, Links).
+- Include Placeholder text for inputs (e.g., "Enter your email...").
+- Include Validation States (e.g., "Error: Invalid email format").
+- Include Empty States (e.g., "No items found. Start by adding one.").
+- Include Loading States (e.g., "Skeleton loader while fetching data").
+- Include Edge Cases (e.g., "Forgot Password flow", "Network Error retry").
 
-LANGUAGE RULES (VERY IMPORTANT):
-- Use simple business language.
-- Avoid technical or developer terms.
-- Describe behavior from a user or system point of view.
-- Use phrases like:
-  • "The user enters..."
-  • "The system checks..."
-  • "The app shows..."
-  • "The user is redirected to..."
-- Do NOT mention APIs, databases, gateways, or services.
+LANGUAGE RULES:
+- Use clear business language for labels.
+- Describe the visual state and the action clearly.
+- Example: "Submit Button (Disabled until form is valid)"
+- Example: "Password Input (Hidden characters, 'Show' toggle)"
 
-If an interaction includes multiple steps, split them into
-separate child nodes written in simple, non-technical language.
+the more detailed it is the best. Dont miss anything.
 
 IDEA:
 ${idea}

@@ -167,7 +167,7 @@ export default function DashboardPage() {
                                         <button
                                             key={project.id}
                                             onClick={() => handleHistoryClick(project)}
-                                            className="group relative bg-white/80 backdrop-blur-sm p-8 rounded-3xl border-2 border-white/60 hover:border-purple-300 hover:shadow-2xl hover:bg-white transition-all duration-500 text-left flex flex-col h-72 overflow-hidden scale-in"
+                                            className="group relative bg-white p-8 rounded-3xl border-2 border-gray-200 shadow-xl hover:border-purple-500 hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 text-left flex flex-col h-72 overflow-hidden scale-in"
                                             style={{ animationDelay: `${i * 100}ms` }}
                                         >
                                             {/* Gradient Overlay */}
@@ -262,19 +262,25 @@ export default function DashboardPage() {
 
                         {panels.map((panel, idx) => (
                             <div key={panel.id} className="bg-white/80 backdrop-blur-sm p-8 rounded-3xl border-2 border-white/60 hover:border-purple-300 hover:shadow-2xl transition-all duration-500" style={{ animationDelay: `${idx * 100}ms` }}>
-                                <div className="flex gap-6">
+                                <div className="flex gap-6 items-start">
                                     <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-purple-600 text-white flex items-center justify-center font-bold text-lg shadow-lg">
                                         {idx + 1}
                                     </div>
                                     <div className="flex-1 space-y-4">
-                                        <h3 className="text-2xl font-bold text-gray-900">{panel.title}</h3>
-                                        <p className="text-lg text-gray-600 leading-relaxed">{panel.core_responsibility}</p>
-                                        <button onClick={() => { setSelectedPanelId(panel.id); setViewStatus('canvas'); }} className="btn-primary">
-                                            Visualize Phase {idx + 1}
-                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                            </svg>
-                                        </button>
+                                        <div className="flex justify-between items-start">
+                                            <h3 className="text-2xl font-bold text-gray-900">{panel.title}</h3>
+                                            <button onClick={() => { setSelectedPanelId(panel.id); setViewStatus('canvas'); }} className="btn-primary flex-shrink-0 ml-4">
+                                                Visualize Phase {idx + 1}
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div className="prose prose-sm max-w-none text-gray-600 leading-relaxed bg-white/50 p-6 rounded-2xl border border-gray-100">
+                                            {panel.core_responsibility.split('\n').map((line, i) => (
+                                                <p key={i} className="mb-2 last:mb-0">{line}</p>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
