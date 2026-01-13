@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAppContext } from "../context/AppContext";
 import { supabase } from "../lib/supabase";
@@ -21,6 +21,7 @@ export default function PromptPage() {
     }
     const [references, setReferences] = useState<Reference[]>([]);
     const [isListening, setIsListening] = useState(false);
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
         if (!authLoading && !session) {
@@ -35,8 +36,12 @@ export default function PromptPage() {
     // STT Logic
     const toggleListening = () => {
         if (isListening) {
+            try {
+                recognitionRef.current?.stop();
+            } catch (e) {
+                console.warn("Could not stop recognition", e);
+            }
             setIsListening(false);
-            window.speechSynthesis.cancel(); // Safety cleanup
             return;
         }
 
@@ -51,6 +56,8 @@ export default function PromptPage() {
         recognition.interimResults = true;
         recognition.lang = 'en-US';
 
+        recognitionRef.current = recognition;
+
         let initialText = localIdea; // Capture text when starting
 
         recognition.onstart = () => {
@@ -58,8 +65,15 @@ export default function PromptPage() {
             initialText = localIdea; // Ensure we have the latest
         };
 
-        recognition.onend = () => setIsListening(false);
+        recognition.onend = () => {
+            setIsListening(false);
+            recognitionRef.current = null;
+        };
+
         recognition.onerror = (event: any) => {
+            if (event.error === 'aborted') {
+                return; // Ignore user-initiated aborts
+            }
             console.error("Speech recognition error", event.error);
             setIsListening(false);
         };
@@ -74,7 +88,11 @@ export default function PromptPage() {
             setLocalIdea((initialText ? initialText + " " : "") + fullTranscript);
         };
 
-        recognition.start();
+        try {
+            recognition.start();
+        } catch (e) {
+            console.error("Failed to start recognition", e);
+        }
     };
 
     // Reference Logic
@@ -206,8 +224,8 @@ export default function PromptPage() {
                                 type="button"
                                 onClick={toggleListening}
                                 className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all duration-300 shadow-md ${isListening
-                                        ? "bg-red-500 text-white animate-pulse ring-4 ring-red-200"
-                                        : "bg-white text-gray-700 hover:text-blue-600 hover:bg-blue-50 border border-gray-200"
+                                    ? "bg-red-500 text-white animate-pulse ring-4 ring-red-200"
+                                    : "bg-white text-gray-700 hover:text-blue-600 hover:bg-blue-50 border border-gray-200"
                                     }`}
                             >
                                 <svg className={`w-5 h-5 ${isListening ? "animate-bounce" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
