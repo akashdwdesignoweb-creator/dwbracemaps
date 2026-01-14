@@ -128,6 +128,8 @@ export default function PromptPage() {
             });
             const data = await res.json();
             const generatedPanels = data.panels || [];
+            const generatedTitle = data.title || localIdea.substring(0, 50); // Fallback
+
             setPanels(generatedPanels);
 
             // Create Project in Supabase
@@ -137,6 +139,7 @@ export default function PromptPage() {
                     .insert({
                         user_id: session.user.id,
                         idea: localIdea,
+                        title: generatedTitle,
                         panels: generatedPanels,
                         maps: {}
                     })

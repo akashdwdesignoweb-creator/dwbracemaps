@@ -222,7 +222,7 @@ export default function DashboardPage() {
 
                                             {/* Title */}
                                             <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 line-clamp-3 leading-tight transition-colors mb-4 flex-1">
-                                                {project.idea}
+                                                {project.title || project.idea}
                                             </h3>
 
                                             {/* Footer */}
@@ -294,7 +294,10 @@ export default function DashboardPage() {
                 <main className="container mx-auto px-6 py-12 max-w-5xl">
                     <div className="space-y-8 fade-in">
                         <div className="space-y-3 mb-12">
-                            <h1 className="text-5xl font-extrabold text-gray-900 leading-tight">{idea}</h1>
+                            {/* Title logic from the selected project in history */}
+                            <h1 className="text-5xl font-extrabold text-gray-900 leading-tight">
+                                {history.find(p => p.id === currentProjectId)?.title || idea}
+                            </h1>
                             <div className="h-1 w-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
                         </div>
 
@@ -365,7 +368,9 @@ export default function DashboardPage() {
 
                     <div className="p-4 bg-gray-50 rounded-2xl space-y-2 mt-6">
                         <div className="text-xs font-bold text-gray-500 uppercase">Active Project</div>
-                        <h4 className="text-sm font-bold text-gray-900 line-clamp-2">{idea}</h4>
+                        <h4 className="text-sm font-bold text-gray-900 line-clamp-2">
+                            {history.find(p => p.id === currentProjectId)?.title || idea}
+                        </h4>
                         <button onClick={() => { resetProject(); fetchHistory(); setViewStatus('landing'); }} className="text-xs text-blue-600 font-bold hover:underline">
                             Switch Project
                         </button>

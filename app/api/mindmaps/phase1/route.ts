@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   const { idea, references } = await req.json();
 
   const llm = new GeminiLLM();
-  const panels = await runPhase1(idea, llm, references);
+  const { panels, title } = await runPhase1(idea, llm, references);
 
-  return NextResponse.json({ panels });
+  return NextResponse.json({ panels, title });
 }
