@@ -20,13 +20,13 @@ IMPORTANT DEFINITIONS:
   Blockchain, Governance, etc.
 - Those are FEATURES, not panels.
 
-ALLOWED PANEL TYPES (examples):
+ PANEL TYPES (examples):
 - User App
 - Admin Panel
 - Driver App
 - Vendor / Seller Panel
 - Support / Ops Panel
-- Super Admin Panel
+-  Admin Panel
 
 RULES:
 1. Panels MUST map to a primary user role like user panel , admin panel etc depending on the app.
@@ -37,13 +37,12 @@ RULES:
 6. Each panel should relate with each other as they are panels of a single application
 
 CRITICAL:
-For "core_responsibility", provide a FULL END-TO-END DESCRIPTION in EASY BUSINESS LANGUAGE.
-- Explain EVERY feature that the panel would have.
-- Do not be brief. Be descriptive and visualize the value for the user.
+For "core_responsibility", provide a  DESCRIPTION in EASY BUSINESS LANGUAGE.
 - This text will be shown to the user to explain what this part of the app does.
 
 OUTPUT STRICT JSON ONLY:
 {
+  "project_title": string, // A short, catchy, 2-4 word title for this project
   "panels": [
     {
       "id": string,
