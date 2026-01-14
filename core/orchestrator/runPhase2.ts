@@ -5,10 +5,11 @@ import { resolvePanelRoot } from "./resolvePanelRoot";
 
 export async function runPhase2(
   idea: string,
-  panel: any
+  panel: any,
+  allPanels: any[] = []
 ): Promise<PanelMindMap> {
   const llm = new GeminiLLM();
-  const prompt = buildPanelDesignPrompt(idea, panel);
+  const prompt = buildPanelDesignPrompt(idea, panel, allPanels);
 
   const raw = await llm.complete(prompt);
   const rawMap = JSON.parse(raw);

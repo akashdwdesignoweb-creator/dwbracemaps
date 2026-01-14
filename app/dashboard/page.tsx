@@ -54,40 +54,78 @@ export default function DashboardPage() {
     const selectedPanel = panels.find(p => p.id === selectedPanelId);
     const currentMap = selectedPanelId ? maps[selectedPanelId] : null;
 
+    // QUEUE PROCESSOR: Sequentially generate assets for panels
     useEffect(() => {
-        async function fetchMap() {
-            if (selectedPanelId && !maps[selectedPanelId] && !isMapLoading) {
-                setIsMapLoading(true);
-                const panel = panels.find(p => p.id === selectedPanelId);
-                if (!panel) return;
+        async function processQueue() {
+            // If already loading or no auth, skip
+            if (isMapLoading || !session?.user || !currentProjectId) return;
 
+            // Find the first panel that doesn't have a map
+            const pendingPanel = panels.find(p => !maps[p.id]);
+
+            if (pendingPanel) {
+                setIsMapLoading(true);
                 try {
-                    const res = await fetch("/api/mindmaps/phase2", {
+                    // 1. Generate Mind Map (Phase 2)
+                    const resMap = await fetch("/api/mindmaps/phase2", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ panel })
+                        body: JSON.stringify({
+                            idea: idea ?? "",
+                            panel: pendingPanel,
+                            allPanels: panels
+                        })
                     });
-                    const data = await res.json();
-                    setMapForPanel(selectedPanelId, data);
+                    const mapData = await resMap.json();
 
-                    if (session?.user && currentProjectId) {
-                        const updatedMaps = { ...maps, [selectedPanelId]: data };
+                    // Persist Map Immediately
+                    let currentMaps = { ...maps, [pendingPanel.id]: mapData };
+                    setMapForPanel(pendingPanel.id, mapData);
+
+                    await supabase
+                        .from('projects')
+                        .update({ maps: currentMaps })
+                        .eq('id', currentProjectId);
+
+                    // 2. Generate Description (Phase 3) - Chained immediately
+                    const resDesc = await fetch("/api/mindmaps/description", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ map: mapData.panel.root })
+                    });
+                    const { description } = await resDesc.json();
+
+                    if (description) {
+                        const describedMap = {
+                            ...mapData,
+                            panel: { ...mapData.panel, description }
+                        };
+
+                        // Update State & Persist Description
+                        currentMaps = { ...currentMaps, [pendingPanel.id]: describedMap };
+                        setMapForPanel(pendingPanel.id, describedMap);
+
                         await supabase
                             .from('projects')
-                            .update({ maps: updatedMaps })
+                            .update({ maps: currentMaps })
                             .eq('id', currentProjectId);
 
+                        // Update history to reflect changes in landing page immediately
                         fetchHistory();
                     }
+
                 } catch (error) {
-                    console.error("Failed to fetch map", error);
+                    console.error(`Failed to process panel ${pendingPanel.id}`, error);
                 } finally {
                     setIsMapLoading(false);
                 }
             }
         }
-        fetchMap();
-    }, [selectedPanelId, maps, panels, setMapForPanel, session, idea, fetchHistory]);
+
+        processQueue();
+    }, [panels, maps, isMapLoading, session, currentProjectId, setMapForPanel, fetchHistory]);
+
+
 
     const handleHistoryClick = (item: any) => {
         setIdea(item.idea);
@@ -362,7 +400,13 @@ export default function DashboardPage() {
 
                 <div className="flex-1 relative">
                     {currentMap ? (
-                        <MindMap key={selectedPanelId} root={currentMap.panel.root} />
+                        <MindMap
+                            key={selectedPanelId}
+                            root={currentMap.panel.root}
+                            title={selectedPanel?.title || "Mind Map"}
+                            description={currentMap.panel.description}
+                            onGenerateDescription={async () => { }} // No-op, handled automatically
+                        />
                     ) : (
                         <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
                             <div className="text-center space-y-4">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useEffect, useState } from "react";
 import ReactFlow, {
     Node,
     Edge,
@@ -15,6 +15,8 @@ import ReactFlow, {
     getRectOfNodes
 } from "reactflow";
 import "reactflow/dist/style.css";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm"; // Import remark-gfm for tables
 import { BraceNode } from "@/app/lib/braceMapSchema";
 import { BRANCH_COLORS } from "@/app/lib/mapColors";
 import dagre from "dagre";
@@ -185,7 +187,14 @@ function flattenTree(
 
 /* ==================== INNER COMPONENT ==================== */
 
-function MindMapContent({ root }: { root: BraceNode }) {
+
+function MindMapContent({ root, title, description, onGenerateDescription }: {
+    root: BraceNode,
+    title: string,
+    description?: string,
+    onGenerateDescription: () => Promise<void>
+}) {
+
     const { fitView, getNodes } = useReactFlow();
 
     const { nodes: initialNodes, edges: initialEdges } = useMemo(() => flattenTree(root), [root]);
@@ -193,6 +202,8 @@ function MindMapContent({ root }: { root: BraceNode }) {
 
     const [nodes, setNodes, onNodesChange] = useNodesState(layoutedNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(layoutedEdges);
+    const [isDescriptionOpen, setIsDescriptionOpen] = useState(false);
+    const [isGeneratingDesc, setIsGeneratingDesc] = useState(false);
 
     useEffect(() => {
         setNodes(layoutedNodes);
@@ -210,6 +221,17 @@ function MindMapContent({ root }: { root: BraceNode }) {
         } catch (error) {
             console.error("Failed to download PDF", error);
             alert("Could not generate PDF. Please try again.");
+        }
+    };
+
+    const handleViewDescription = async () => {
+        if (description) {
+            setIsDescriptionOpen(true);
+        } else {
+            setIsGeneratingDesc(true);
+            await onGenerateDescription();
+            setIsGeneratingDesc(false);
+            setIsDescriptionOpen(true);
         }
     };
 
@@ -232,7 +254,22 @@ function MindMapContent({ root }: { root: BraceNode }) {
             <Background color="#e2e8f0" gap={24} size={1} />
             <Controls showInteractive={false} className="!bg-white !border-slate-200 !shadow-lg !rounded-xl overflow-hidden" />
 
-            <Panel position="top-right">
+            <Panel position="top-right" className="flex gap-3">
+                <button
+                    onClick={handleViewDescription}
+                    disabled={isGeneratingDesc}
+                    className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-3 px-5 border border-slate-200 rounded-xl shadow-xl flex items-center gap-3 transition-all active:scale-95 group disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                    {isGeneratingDesc ? (
+                        <div className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                        <svg className="w-5 h-5 text-purple-600 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    )}
+                    {isGeneratingDesc ? "Generating..." : "View Description"}
+                </button>
+
                 <button
                     onClick={downloadPdf}
                     className="bg-white hover:bg-slate-50 text-slate-900 font-bold py-3 px-5 border border-slate-200 rounded-xl shadow-xl flex items-center gap-3 transition-all active:scale-95 group"
@@ -243,13 +280,58 @@ function MindMapContent({ root }: { root: BraceNode }) {
                     Download PDF
                 </button>
             </Panel>
+
+            {/* Description Modal */}
+            {isDescriptionOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200 relative">
+                        {/* Header */}
+                        <div className="p-8 pb-4 border-b border-gray-100 flex items-start justify-between">
+                            <div>
+                                <h2 className="text-3xl font-extrabold text-gray-900 mb-1">{title}</h2>
+                                <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Map Overview</p>
+                            </div>
+                            <button
+                                onClick={() => setIsDescriptionOpen(false)}
+                                className="p-2 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-900 transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-8 pt-6 overflow-y-auto">
+                            <div className="prose prose-lg prose-slate max-w-none">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>{description || "No description available."}</ReactMarkdown>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="p-6 bg-gray-50 border-t border-gray-100 flex justify-end">
+                            <button
+                                onClick={() => setIsDescriptionOpen(false)}
+                                className="btn-primary"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </ReactFlow>
     );
 }
 
 /* ==================== WRAPPER ==================== */
 
-export default function MindMap({ root }: { root: BraceNode }) {
+export default function MindMap({ root, title, description, onGenerateDescription }: {
+    root: BraceNode,
+    title: string,
+    description?: string,
+    onGenerateDescription: () => Promise<void>
+}) {
     if (!root) {
         return (
             <div className="h-full flex items-center justify-center">
@@ -264,7 +346,12 @@ export default function MindMap({ root }: { root: BraceNode }) {
     return (
         <div style={{ height: "100%", width: "100%" }}>
             <ReactFlowProvider>
-                <MindMapContent root={root} />
+                <MindMapContent
+                    root={root}
+                    title={title}
+                    description={description}
+                    onGenerateDescription={onGenerateDescription}
+                />
             </ReactFlowProvider>
         </div>
     );
