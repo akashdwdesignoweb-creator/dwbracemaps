@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 
 export class GeminiLLM {
   private ai: GoogleGenAI;
-  private model = "gemini-flash-latest";
+  private model = "gemini-3-pro-preview";
 
   constructor() {
     if (!process.env.GEMINI_API_KEY) {
@@ -19,7 +19,7 @@ export class GeminiLLM {
       model: this.model,
       // config: {
       //   thinkingConfig: {
-      //     thinkingLevel: 'HIGH',
+      //     thinkingLevel: 'MEDIUM',
       //   },
       // },
       contents: [

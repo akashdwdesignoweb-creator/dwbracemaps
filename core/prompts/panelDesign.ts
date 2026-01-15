@@ -4,52 +4,68 @@ export function buildPanelDesignPrompt(idea: string, panel: any, allPanels: any[
 
   return `
 SYSTEM:
-You are expanding a software panel that is part of a larger system.
-Do NOT invent features unrelated to the original idea.
+You are an expert product manager and UX architect designing a detailed sitemap/mindmap for a specific panel in a web application.
+Your goal is to output a hierarchical structure that perfectly mimics the depth and detail of a professional functional specification.
 
 CONTEXT:
-Original user idea:
-${idea}
-
-All panels in the system:
+Original User Idea: ${idea}
+Current Panel: ${panel.title} (Responsibility: ${panel.core_responsibility})
+All Panels in System:
 ${panelsContext}
 
 TASK:
-Generate detailed features ONLY for the following panel:
-${panel.title} (Responsibility: ${panel.core_responsibility})
+Generate a recursive mindmap structure for this panel.
+The structure must go from:
+Root -> High-Level Section -> Feature/Sub-section -> Detailed User Stories/Fields.
+You can add a node if you think it is necessary.
 
-RULES:
-- Stay consistent with the original idea
-- Do not duplicate features from other panels
-- Explicitly reference interactions with other panels when needed
-- Output structured JSON only
+STYLE GUIDE (CRITICAL):
+1. **Detailed Descriptions**: Leaf nodes should often contain detailed text blocks.
+   - Start with "On going to this section..." or "User will be able to..."
+   - Use numbered lists for fields (e.g., "1. Product Name\n2. Product Category").
+   - Mention interactions like "**Click on Add Content**".
+2. **Hierarchy**: Group related features under logical parent nodes (e.g., "Manage" under "Content Management").
+3. **No Fluff**: Every node must add value.
 
 OUTPUT FORMAT (STRICT JSON):
+Your output must be a valid JSON object with a single root node.
+Structure:
 {
-  "Panel": string,
-  "Screens": [
-    {
-      "ScreenName": string,
-      "Description": string,
-      "Interactions": [
-        {
-          "Action": string,
-          "Spec": string
-        }
-      ]
-    }
-  ]
+  "root": {
+    "label": "String (Node Title/Text)",
+    "children": [
+      { "label": "...", "children": [...] }
+    ]
+  }
 }
 
-SCREEN SEPARATION RULES (VERY IMPORTANT):
-- All Screens must be direct children of the Panel.
-- Screens must NEVER be nested inside other Screens.
-- Navigation between screens should be described inside action nodes.
-- Treat each user-visible page or step as a separate Screen.
+- "label": The text to display inside the node. Can be multi-line.
+- "children": Array of child nodes. Recursive.
 
-GRANULARITY LEVEL: EXTREME (CRITICAL)
-- List EVERY single UI element (Buttons, Input Fields, Dropdowns, Toggles, Links).
-- Include Placeholder text, Validation States, Empty States, Loading States, Edge Cases.
-- Use clear business language.
+EXAMPLE OUTPUT STRUCTURE:
+{
+  "root": {
+    "label": "User Management",
+    "children": [
+      {
+        "label": "User Details",
+        "children": [
+            {
+                "label": "After going to this section... view details:\\n1. Name\\n2. Email\\n3. Status"
+            }
+        ]
+      },
+      {
+        "label": "Manage",
+        "children": [
+            { "label": "1. Block User\\n2. Reset Password" }
+        ]
+      }
+    ]
+  }
+}
+
+Begin. Output JSON only.
 `;
 }
+

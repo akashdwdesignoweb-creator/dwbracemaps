@@ -1,36 +1,46 @@
 import { MindMapNode } from "../types/mindmap";
 
 export function resolvePanelRoot(rawMap: any): MindMapNode {
-  // Case 1: Old format (keep for backward compatibility)
-  if (rawMap?.panel?.root) {
-    return rawMap.panel.root;
+  // Case 1: New Recursive Format (Preferred)
+  if (rawMap?.root) {
+    return assignIds(rawMap.root);
   }
 
-  // ✅ Case 2: Screen-first format (NEW, preferred)
+  // Case 2: Legacy Screens Format (Fallback)
   if (Array.isArray(rawMap?.Screens)) {
     return {
       id: "root",
-      label: rawMap.Panel || "Application Flow",
+      label: rawMap.Panel || "Panel",
       children: rawMap.Screens.map((screen: any, i: number) => ({
         id: `screen_${i}`,
-        label: `${screen.ScreenName}\n${screen.Description ?? ""}`,
-        children: (screen.Interactions || []).map(
-          (interaction: any, j: number) => ({
-            id: `screen_${i}_action_${j}`,
-            label: interaction.Action || interaction.Button || "Interaction",
-            children: [
-              {
-                id: `screen_${i}_action_${j}_spec`,
-                label: interaction.Spec || interaction.Description || "",
-                children: [],
-              },
-            ],
-          })
-        ),
-      })),
+        label: screen.ScreenName,
+        children: [
+          {
+            id: `screen_${i}_desc`,
+            label: screen.Description || "",
+            children: (screen.Interactions || []).map((act: any, j: number) => ({
+              id: `screen_${i}_act_${j}`,
+              label: act.Action,
+              children: []
+            }))
+          }
+        ]
+      }))
     };
   }
 
-  console.error("UNSUPPORTED PHASE-2 OUTPUT:", rawMap);
-  throw new Error("Unable to resolve panel root from Gemini output");
+  console.error("Unknown MindMap format:", rawMap);
+  return { id: "root-error", label: "Error Parsing Map", children: [] };
+}
+
+// Helper to assign unique IDs recursively
+function assignIds(node: any, prefix = "node"): MindMapNode {
+  const id = `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
+  return {
+    id,
+    label: node.label || "Untitled",
+    children: (node.children || []).map((child: any, i: number) =>
+      assignIds(child, `${id}_${i}`)
+    ),
+  };
 }

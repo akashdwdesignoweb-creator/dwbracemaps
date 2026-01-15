@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useEffect, useState } from "react";
+import { useMemo, useEffect, useState, useRef } from "react";
 import ReactFlow, {
     Node,
     Edge,
@@ -210,6 +210,8 @@ function MindMapContent({ root, title, description, onGenerateDescription }: {
         setEdges(layoutedEdges);
     }, [layoutedNodes, layoutedEdges, setNodes, setEdges]);
 
+    const hasFittedRef = useRef<string | null>(null);
+
     const downloadPdf = () => {
         const nodes = getNodes();
         const currentEdges = edges;
@@ -236,8 +238,13 @@ function MindMapContent({ root, title, description, onGenerateDescription }: {
     };
 
     useEffect(() => {
-        window.requestAnimationFrame(() => fitView());
-    }, [nodes, fitView]);
+        if (nodes.length > 0 && hasFittedRef.current !== root.id) {
+            window.requestAnimationFrame(() => {
+                fitView({ duration: 800 });
+                hasFittedRef.current = root.id;
+            });
+        }
+    }, [nodes, fitView, root.id]);
 
     return (
         <ReactFlow
