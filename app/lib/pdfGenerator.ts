@@ -25,14 +25,42 @@ export const exportMindMapToPdf = (nodes: Node[], edges: Edge[]) => {
     // Determine font
     doc.setFont("helvetica");
 
-    // Values to shift coordinates to (0,0) based on bounds
-    const offsetX = bounds.x - PADDING;
-    const offsetY = bounds.y - PADDING;
+    // 3. Pre-process Nodes to calculate final PDF heights and update bounds
+    const processedNodes = nodes.map(node => {
+        const text = node.data.label || "";
+        const fontSize = node.style?.fontSize ? parseInt(node.style.fontSize as string) : 12;
+        doc.setFontSize(fontSize);
+        const w = node.width || 0;
+        const maxWidth = w - 48;
+        const splitText = doc.splitTextToSize(text, maxWidth);
+        const lineHeight = fontSize * 1.5;
+        const blockHeight = splitText.length * lineHeight;
+        const requiredHeight = blockHeight + 64;
 
-    // 3. Draw Edges (Bottom Layer)
+        return {
+            ...node,
+            height: Math.max(node.height || 0, requiredHeight)
+        };
+    });
+
+    // 4. Recalculate Bounds with expanded heights
+    const finalBounds = getRectOfNodes(processedNodes);
+    const finalWidth = finalBounds.width + PADDING * 2;
+    const finalHeight = finalBounds.height + PADDING * 2;
+
+    // 5. Update PDF format if changed
+    if (finalWidth !== width || finalHeight !== height) {
+        doc.deletePage(1);
+        doc.addPage([finalWidth, finalHeight], finalWidth > finalHeight ? "l" : "p");
+    }
+
+    const offsetX = finalBounds.x - PADDING;
+    const offsetY = finalBounds.y - PADDING;
+
+    // 6. Draw Edges (Bottom Layer)
     edges.forEach(edge => {
-        const sourceNode = nodes.find(n => n.id === edge.source);
-        const targetNode = nodes.find(n => n.id === edge.target);
+        const sourceNode = processedNodes.find(n => n.id === edge.source);
+        const targetNode = processedNodes.find(n => n.id === edge.target);
 
         if (!sourceNode || !targetNode) return;
 
@@ -43,7 +71,7 @@ export const exportMindMapToPdf = (nodes: Node[], edges: Edge[]) => {
         const ty = (targetNode.position.y || 0) + (targetNode.height || 0) / 2 - offsetY;
 
         // Bezier Control Points
-        const dist = Math.abs(tx - sx);
+        const dist = Math.max(Math.abs(tx - sx), 50);
         const cp1x = sx + dist * 0.4;
         const cp1y = sy;
         const cp2x = tx - dist * 0.4;
@@ -57,12 +85,12 @@ export const exportMindMapToPdf = (nodes: Node[], edges: Edge[]) => {
         doc.lines([[cp1x - sx, cp1y - sy, cp2x - sx, cp2y - sy, tx - sx, ty - sy]], sx, sy, [1, 1]);
     });
 
-    // 4. Draw Nodes (Top Layer)
-    nodes.forEach(node => {
+    // 7. Draw Nodes (Top Layer)
+    processedNodes.forEach(node => {
         const x = (node.position.x || 0) - offsetX;
         const y = (node.position.y || 0) - offsetY;
-        let w = node.width || 0;
-        let h = node.height || 0;
+        const w = node.width || 0;
+        const h = node.height || 0;
 
         // Colors
         const bgColor = node.style?.backgroundColor || node.style?.background || "#ffffff";
@@ -90,18 +118,8 @@ export const exportMindMapToPdf = (nodes: Node[], edges: Edge[]) => {
 
         const maxWidth = w - 48; // padding
         const splitText = doc.splitTextToSize(text, maxWidth);
-
-        // Check if text overflow height
-        // AGGRESSIVE BUFFER: 1.5x line height and 60px padding
         const lineHeight = fontSize * 1.5;
         const blockHeight = splitText.length * lineHeight;
-
-        // Dynamic Height Adjustment in PDF
-        const minHeight = h;
-        const requiredHeight = blockHeight + 60;
-        if (requiredHeight > h) {
-            h = requiredHeight;
-        }
 
         // Shape
         const radius = node.style?.borderRadius === "9999px" ? h / 2 : 12; // Pill vs Rounded
@@ -109,8 +127,6 @@ export const exportMindMapToPdf = (nodes: Node[], edges: Edge[]) => {
 
         // Render Text
         const textX = align === "center" ? x + w / 2 : x + 24; // Center or Left padding
-
-        // Text Y centering with careful baseline adj
         const textY = y + (h / 2) - (blockHeight / 2) + (lineHeight / 1.6);
 
         doc.text(splitText, textX, textY, { align: align === "left" ? "left" : "center" });

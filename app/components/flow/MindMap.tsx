@@ -38,7 +38,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "LR") => 
     dagreGraph.setGraph({
         rankdir: direction,
         ranksep: 300, // Generous spacing to prevent overlap
-        nodesep: 100
+        nodesep: 150  // Increased from 100 to provide more vertical breathing room
     });
 
     nodes.forEach((node) => {
@@ -61,14 +61,15 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "LR") => 
             // Clamp width
             width = Math.max(BASE_WIDTH, Math.min(estimatedTextWidth + 60, MAX_WIDTH));
 
-            // Height Estimation
-            const textWidth = width - 40; // padding
-            const charsPerLine = textWidth / 9;
+            // Height Estimation - Optimized for PDF Wrapping
+            const textWidth = width - 48; // matching PDF padding (24*2)
+            const charsPerLine = Math.floor(textWidth / 8.5); // conservative char width
             const wrappedLines = Math.ceil(charCount / charsPerLine);
             const explicitLines = text.split("\n").length;
             const totalLines = Math.max(wrappedLines, explicitLines);
 
-            height = Math.max(BASE_HEIGHT, 50 + (totalLines * 24));
+            // 24px per line + 64px padding (matching PDF buffer)
+            height = Math.max(BASE_HEIGHT, 64 + (totalLines * 24));
         }
 
         dagreGraph.setNode(node.id, { width, height });
@@ -91,6 +92,10 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = "LR") => 
             x: nodeWithPosition.x - width / 2,
             y: nodeWithPosition.y - height / 2,
         };
+
+        // Explicitly set dimensions for bounds calculation (used by PDF export)
+        node.width = width;
+        node.height = height;
 
         return node;
     });
