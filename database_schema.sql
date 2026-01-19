@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   idea TEXT NOT NULL,
+  title TEXT, -- Short AI-generated title
   panels JSONB NOT NULL, -- List of panels generated in Phase 1
   maps JSONB DEFAULT '{}'::jsonb, -- Map data for each panel generated in Phase 2
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
