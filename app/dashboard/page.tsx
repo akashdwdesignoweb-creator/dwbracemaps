@@ -24,6 +24,8 @@ export default function DashboardPage() {
         setCurrentProjectId,
         setIdea,
         setPanels,
+        costing,
+        setCosting,
         resetProject,
         logout
     } = useAppContext();
@@ -120,10 +122,36 @@ export default function DashboardPage() {
                     setIsMapLoading(false);
                 }
             }
+
+            // 3. Generate Costing (Phase 4) - When all maps are done and costing is missing
+            const allMapsDone = panels.length > 0 && panels.every(p => maps[p.id]);
+            if (allMapsDone && !costing && !isMapLoading) {
+                setIsMapLoading(true);
+                try {
+                    const res = await fetch("/api/costing", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ idea, panels, maps })
+                    });
+                    const costingData = await res.json();
+                    setCosting(costingData);
+
+                    await supabase
+                        .from('projects')
+                        .update({ costing: costingData })
+                        .eq('id', currentProjectId);
+
+                    fetchHistory();
+                } catch (error) {
+                    console.error("Failed to generate costing", error);
+                } finally {
+                    setIsMapLoading(false);
+                }
+            }
         }
 
         processQueue();
-    }, [panels, maps, isMapLoading, session, currentProjectId, setMapForPanel, fetchHistory]);
+    }, [panels, maps, isMapLoading, session, currentProjectId, setMapForPanel, fetchHistory, costing, setCosting, idea]);
 
 
 
@@ -134,6 +162,7 @@ export default function DashboardPage() {
         Object.entries(item.maps).forEach(([panelId, mapData]) => {
             setMapForPanel(panelId, mapData);
         });
+        setCosting(item.costing || null);
         if (item.panels.length > 0) {
             setSelectedPanelId(item.panels[0].id);
         }
@@ -299,6 +328,89 @@ export default function DashboardPage() {
                                 {history.find(p => p.id === currentProjectId)?.title || idea}
                             </h1>
                             <div className="h-1 w-24 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full"></div>
+                        </div>
+
+                        {/* Costing Section */}
+                        {costing && (
+                            <div className="bg-white/90 backdrop-blur-md p-10 rounded-[2.5rem] border-2 border-blue-100 shadow-2xl space-y-8 relative overflow-hidden group">
+                                <div className="absolute top-0 right-0 w-64 h-64 bg-blue-50 rounded-full -mr-20 -mt-20 blur-3xl opacity-50 transition-all group-hover:bg-purple-50 group-hover:scale-110 duration-700"></div>
+                                
+                                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-8">
+                                    <div>
+                                        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold mb-4 uppercase tracking-wider">
+                                            Resource Allocation & Estimations
+                                        </div>
+                                        <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">Development Roadmap</h2>
+                                        <p className="text-gray-500 mt-2 font-medium">Estimated time to launch based on technical complexity</p>
+                                    </div>
+                                    <div className="flex items-center gap-6 bg-white p-6 rounded-3xl border border-gray-100 shadow-xl">
+                                        <div className="text-center">
+                                            <div className="text-4xl font-black text-blue-600">{costing.total_hours}</div>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Hours</div>
+                                        </div>
+                                        <div className="h-10 w-px bg-gray-100"></div>
+                                        <div className="text-center">
+                                            <div className="text-4xl font-black text-purple-600">{costing.estimated_weeks}</div>
+                                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">Total Weeks</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 relative z-10">
+                                    {Object.entries(costing.role_breakdown).map(([role, hours]) => (
+                                        <div key={role} className="bg-gray-50/50 p-6 rounded-3xl border border-gray-100 hover:border-blue-200 hover:bg-white hover:shadow-lg transition-all duration-300">
+                                            <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">{role}</div>
+                                            <div className="text-2xl font-bold text-gray-900">{hours as number} <span className="text-sm font-medium text-gray-400">hrs</span></div>
+                                            <div className="w-full bg-gray-100 h-1.5 rounded-full mt-4 overflow-hidden">
+                                                <div 
+                                                    className={`h-full rounded-full ${
+                                                        role === 'backend' ? 'bg-blue-500' : 
+                                                        role === 'frontend' ? 'bg-purple-500' : 
+                                                        role === 'qa' ? 'bg-pink-500' : 'bg-amber-500'
+                                                    }`}
+                                                    style={{ width: `${((hours as number) / costing.total_hours) * 100}%` }}
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="bg-white rounded-[2rem] border border-gray-100 overflow-hidden relative z-10 shadow-sm">
+                                    <table className="w-full text-left">
+                                        <thead className="bg-gray-50/50">
+                                            <tr>
+                                                <th className="px-8 py-5 text-xs font-bold text-gray-500 uppercase tracking-wider">Project Phase / Panel</th>
+                                                <th className="px-8 py-5 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Estimated Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-50">
+                                            {costing.panel_breakdown.map((pb: any) => (
+                                                <tr key={pb.panel_id} className="hover:bg-blue-50/30 transition-colors group">
+                                                    <td className="px-8 py-5">
+                                                        <div className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors uppercase text-sm tracking-tight">{pb.panel_title}</div>
+                                                        <div className="flex gap-4 mt-2">
+                                                            {Object.entries(pb.roles).map(([role, hours]) => (
+                                                                <span key={role} className="text-[10px] font-bold text-gray-400 uppercase">
+                                                                    {role.charAt(0)}: <span className="text-gray-600">{hours as number}h</span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-5 text-right">
+                                                        <span className="font-black text-lg text-gray-900">{pb.total_hours}h</span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className="h-px flex-1 bg-gray-200"></div>
+                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em]">Application Architecture</h3>
+                            <div className="h-px flex-1 bg-gray-200"></div>
                         </div>
 
                         {panels.map((panel, idx) => (

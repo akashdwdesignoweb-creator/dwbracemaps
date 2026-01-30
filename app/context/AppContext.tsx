@@ -31,6 +31,8 @@ interface AppContextType {
     setMapForPanel: (panelId: string, mapData: any) => void;
     currentProjectId: string | null;
     setCurrentProjectId: (id: string | null) => void;
+    costing: any | null;
+    setCosting: (costing: any | null) => void;
     history: any[];
     fetchHistory: () => Promise<void>;
     resetProject: () => void;
@@ -48,6 +50,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [selectedPanelId, setSelectedPanelId] = useState<string | null>(null);
     const [maps, setMaps] = useState<Record<string, any>>({});
     const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+    const [costing, setCosting] = useState<any | null>(null);
     const [history, setHistory] = useState<any[]>([]);
 
     const fetchHistory = async () => {
@@ -67,6 +70,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setMaps({});
         setCurrentProjectId(null);
         setSelectedPanelId(null);
+        setCosting(null);
     };
 
     useEffect(() => {
@@ -130,6 +134,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
                 setMapForPanel,
                 currentProjectId,
                 setCurrentProjectId,
+                costing,
+                setCosting,
                 history,
                 fetchHistory,
                 resetProject,

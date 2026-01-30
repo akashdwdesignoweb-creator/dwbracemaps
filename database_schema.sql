@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS projects (
   title TEXT, -- Short AI-generated title
   panels JSONB NOT NULL, -- List of panels generated in Phase 1
   maps JSONB DEFAULT '{}'::jsonb, -- Map data for each panel generated in Phase 2
+  costing JSONB DEFAULT '{}'::jsonb, -- Estimation data for resources and hours
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
